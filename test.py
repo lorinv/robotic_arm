@@ -35,23 +35,25 @@ def getReg(index, regstart, rlength):
         return vals[0]
     return vals
 
-for i in range(200):
-    setReg(1,30,((i%265),(512>>8)))  # this will move servo 1 to centered position (512)
+setReg(5,30,((0%265),(512>>8)))        
+for i in range(225):
+    #setReg(1,30,((i%265),(512>>8)))  # this will move servo 1 to centered position (512)
     #print getReg(1,43,1)
     setReg(2,30,((i%265),(512>>8)))  # this will move servo 1 to centered position (512)
     setReg(3,30,((i%265),(512>>8)))
     setReg(4,30,((i%265),(512>>8)))    
-    #print(i)
     sleep(.05)
 
-for i in range(200):
-    setReg(1,30,(((200-i)%265),(512>>8)))  # this will move servo 1 to centered position (512
+for i in range(245):    
+    setReg(5,30,((i%265),(512>>8)))        
+    sleep(.05)
+
+for i in range(225):
+    #setReg(1,30,(((200-i)%265),(512>>8)))  # this will move servo 1 to centered position (512
     #print getReg(1,43,1)
     setReg(2,30,(((200-i)%265),(512>>8)))  # this will move servo 1 to centered position (512)
     setReg(3,30,(((200-i)%265),(512>>8)))
     setReg(4,30,(((200-i)%265),(512>>8)))    
-    #print(i)
-    #print getReg(1,43,1
     sleep(.05)
 #setReg(2,30,((512),(512>>8)))
 #setReg(2,30,((512%256),(512>>8)))
