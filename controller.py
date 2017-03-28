@@ -20,13 +20,14 @@ class ArmController(object):
             self.s.port = port           # this is whatever port your are using
             self.s.open()
         except:
-            self.s.port = "/dev/ttyUSB1"   
+            self.s.port = "/dev/ttyUSB0"   
             self.s.open()        # this is whatever port your are using
 
         self.initialize()
 
     def initialize(self):
-        for i in range(10):
+        self.s.flushInput()
+        for i in range(30):
             temp_position = 512
             offset = temp_position / 256
             location = temp_position % 256
@@ -35,10 +36,10 @@ class ArmController(object):
             self.setReg(3, 30, ((location%265),offset))                    
             self.setReg(4, 30, ((location%265),offset))                    
             self.setReg(5, 30, ((location%265),offset))                    
-            sleep(.01)       
+            sleep(1)       
 
     def set_joint(self, motor_id, position):    
-
+        self.s.flushInput()
         if position > motors_maxs[motor_id - 1]:
             position = motors_maxs[motor_id - 1]
 
@@ -72,6 +73,7 @@ class ArmController(object):
         pass
 
     def setReg(self, ID,reg,values):
+        self.s.flushInput()
         length = 3 + len(values)
         checksum = 255-((ID+length+AX_WRITE_DATA+reg+sum(values))%256)          
         self.s.write(chr(0xFF)+chr(0xFF)+chr(ID)+chr(length)+chr(AX_WRITE_DATA)+chr(reg))
