@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
 
-cap = cv2.VideoCapture(2)
-ret, img = cap.read()
+cap = cv2.VideoCapture(1)
+for i in range(10):
+	ret, img = cap.read()
 
 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
@@ -31,6 +32,15 @@ x = m['m10'] /  m['m00']
 y = m['m01'] /  m['m00']
 print x
 print y
+
+grid = img.copy()
+for i in range(0, img.shape[0], img.shape[0]/8):
+    grid[i:i+5,:] = 0
+for i in range(0, img.shape[1], img.shape[1]/8):
+    grid[:,i:i+5] = 0
+cv2.imshow("grid", grid)
+cv2.waitKey(0)
+
 cv2.circle(img, (int(x), int(y)), 10, (0, 0, 255), 4)
 cv2.drawContours(img, contours, max_contour, (0,0,255), 3)
 cv2.imshow("mask", mask)
