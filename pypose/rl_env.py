@@ -92,7 +92,7 @@ class Arm_Env:
 
     def step(self, action):   
         self.time_steps += 1          
-        if self.time_steps % 200 == 0:
+        if self.time_steps % 100 == 0:
             self.action_controller.take_a_break()
             time.sleep(60)
             self.action_controller.set_poses(self.action_controller.motor_poses)
