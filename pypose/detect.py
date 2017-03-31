@@ -2,8 +2,7 @@ import cv2
 import numpy as np
 
 cap = cv2.VideoCapture(1)
-for i in range(10):
-	ret, img = cap.read()
+ret, img = cap.read()
 
 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
