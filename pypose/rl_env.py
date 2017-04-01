@@ -90,17 +90,25 @@ class Arm_Env:
         self.action_controller.reset()          
         return self.step([0,0,0])  
 
+    """
+    @action: list of motor actions {+c, -c, 0}
+    
+    returns: @observation, a unique state id for some state on nxn grid, where id in [0,n**2)
+    """
     def step(self, action):   
-        self.time_steps += 1          
+        self.time_steps += 1
+        
         if self.time_steps % 100 == 0:
             self.action_controller.take_a_break()
             time.sleep(60)
+            #reset motor state to before break
             self.action_controller.set_poses(self.action_controller.motor_poses)
             time.sleep(2)
 
-
+        #eg, (c, 0, -c)
         self.action_controller.take_action(action)        
         observation, area = self.state_controller.get_object_state()            
+        #@observation: center of the circle, 
         if area < MIN_AREA:
             observation, area = self.find_object()
         print "\tReturned Area: %s" % str(area)        
