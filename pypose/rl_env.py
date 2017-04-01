@@ -106,7 +106,7 @@ class Arm_Env:
         print "\tReturned Area: %s" % str(area)        
         print "Distance to Center: %s" % str(self.state_controller.distance_to_center(observation))        
         reward = self.state_controller.distance_to_center(observation)        
-        reward += area * 100
+        #reward += area * 100
         done = area > TERMINAL_THRESHOLD_SIZE 
         info = None
         return observation, reward, done, info
@@ -176,9 +176,9 @@ class Camera_State_Controller:
         #y_center = (y2 - y1) / 2
         if DEBUG:
             grid = img.copy()
-            for i in range(0, img.shape[0], img.shape[0]/8):
+            for i in range(0, img.shape[0], img.shape[0]/self.grid_dim[0]):
                 grid[i:i+5,:] = 0
-            for i in range(0, img.shape[1], img.shape[1]/8):
+            for i in range(0, img.shape[1], img.shape[1]/self.grid_dim[0]):
                 grid[:,i:i+5] = 0
             cv2.imshow("grid", grid)
             cv2.waitKey(5)
@@ -196,7 +196,7 @@ class Camera_State_Controller:
         print x_cell
         print y_cell                
         
-        return 8 * int(y_cell) + int(x_cell)
+        return self.grid_dim[0] * int(y_cell) + int(x_cell)
 
  
 
