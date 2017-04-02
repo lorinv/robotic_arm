@@ -2,7 +2,6 @@
 
 #from __future__ import print_function
 import gym
-import pandas as pd
 import numpy as np
 import random
 import sys
@@ -68,7 +67,7 @@ class TDLambdaLearner(object):
 
     def _appendToCache(self, state, statePrime, action, reward):
         experience = (state, statePrime, action, reward)
-        self._cachedExperiences.append(experience)
+        self._experienceCache.append(experience)
         self._cacheFile.write(str(experience)+"\n")
 
     """
@@ -91,6 +90,7 @@ class TDLambdaLearner(object):
             
     def InitState(self, state):
         self.state = state
+        raw_input(state)
         self.action = self.qtable[state].argmax()
         return self.action
 
@@ -232,17 +232,20 @@ def main():
     """
     learner = TDLambdaLearner(env.num_states, env.num_actions, alpha, gamma,
                                                 randomActionRate, randomActionDecayRate, tdLambda,
-                                                numTraces, traceMethod, algorithm)
+                                                200, traceMethod, algorithm, True)
     done = False
     convergence = False
     while not convergence:
         done = False
         #reset the learner's eligibility traces for this episode
         learner.ResetEligibilities()
-        action = learner.InitState(state)
+        observation, reward, done, info = env.reset()
+        action = learner.InitState(observation)
         while not done:
             observation, reward, done, info = env.step(action)
             action = learner.move(observation, reward)
+            print ">>Action: "+str(action)
+            raw_input("")
         
         #re-run training offline, eg Dyna-Q
         #learner.Dream()

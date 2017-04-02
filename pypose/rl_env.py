@@ -85,17 +85,22 @@ class Arm_Env:
         self.state_controller = Camera_State_Controller(clf_name="green_circle", grid_dim=grid_dim, camera_dev=1)
         self.search_direction = 1
 
+        self.actions = []        
+        for combination in itertools.product([0,MOVE_CONST,-MOVE_CONST], repeat=3):
+            self.actions.append(combination)
+
     def reset(self):
         time.sleep(5)
-        self.action_controller.reset()          
-        return self.step([0,0,0])  
+        #self.action_controller.reset()          
+        return self.step(0)  
 
     """
     @action: list of motor actions {+c, -c, 0}
     
     returns: @observation, a unique state id for some state on nxn grid, where id in [0,n**2)
     """
-    def step(self, action):   
+    def step(self, action_id):   
+        action = self.actions[action_id]
         self.time_steps += 1
         
         if self.time_steps % 100 == 0:
@@ -114,6 +119,17 @@ class Arm_Env:
         print "\tReturned Area: %s" % str(area)        
         print "Distance to Center: %s" % str(self.state_controller.distance_to_center(observation))        
         reward = self.state_controller.distance_to_center(observation)        
+        '''
+        Linear Reward: maxd - d
+        Neither w/ Margin -- 0
+
+        Closer -- +1 
+        Each Step -- -.1
+        Goal State +10
+
+
+
+        '''
         #reward += area * 100
         done = area > TERMINAL_THRESHOLD_SIZE 
         info = None
@@ -205,9 +221,6 @@ class Camera_State_Controller:
         print y_cell                
         
         return self.grid_dim[0] * int(y_cell) + int(x_cell)
-
- 
-
 
 class Green_Circle_Detector(object):
     """docstring for ClassName"""
