@@ -77,13 +77,24 @@ class Arm_Test:
 
 class Arm_Env:
 
-    def __init__(self, grid_dim=(16,16), num_motors=3):
+    def __init__(self, grid_dim=(9,9), num_motors=3):
+    """
+    @grid_dim: nxn, where n is preferably some odd integer, such that the grid has a single center cell.
+    """
         self.time_steps = 0
         self.num_states = grid_dim[0] * grid_dim[1]
         self.num_actions = 3**num_motors                
         self.action_controller = Arm_Controller(num_motors)
         self.state_controller = Camera_State_Controller(clf_name="green_circle", grid_dim=grid_dim, camera_dev=1)
         self.search_direction = 1
+        
+        #position information
+        self.last_xy_position = numpy.array([0,0])
+        self.current_xy_position = numpy.array([0,0])
+        #goal defined as center of grid
+        goal_x = grid_dim[0] / 2 + 1
+        goal_y = grid_dim[1] / 2 + 1
+        self.goal_xy = numpy.array([goal_x, goal_y])
 
         self.actions = []        
         for combination in itertools.product([0,MOVE_CONST,-MOVE_CONST], repeat=3):
@@ -93,6 +104,46 @@ class Arm_Env:
         time.sleep(5)
         #self.action_controller.reset()          
         return self.step(0)  
+
+    """
+    Encapsulate our reward definition. This will likely change often depending on desired
+    behavior/experimenation, so change this definition as ye please to test different reward constructions.
+    
+    @observation: 
+    @xy_position: An (x,y) integer tuple representing the current object position on the grid.
+    """
+    def get_reward(self, observation, xy_position):
+        #NOTE: returns reward as cosine-similarity between direction to the goal (center of image) and the direction of the last action.
+        return self.goal_cossim()
+    
+        #NOTE: return this if we define reward as distance between object position and center of grid
+        #return self.state_controller.distance_to_center(observation)
+
+    def goal_cossim(self):
+        """
+        Assuming this object has stored the static center (x,y) point of the grid, and its
+        last position, this calculates the cosine similarity between the displacement vector and the 
+        position of the goal. In linear algebra terms, this is the cosine similarity of the the vector
+        difference between the current (new) position and last position--call it v' = current_xy - last_xy--
+        and the difference between the last position and the goal--call it g' = g_xy - last_xy.
+        
+        Defining a reward metric in terms of cosine-similarity wrt to the goal direction is nice because it is 
+        constrained to the range [-1.0, 1.0], and gives a direct measure of the 'goodness' of an action's direction.
+        
+        NOTE: This function requires/assumes self.current_xy_position and self.last_xy_position have been updated.
+        """
+        v_prime = self.current_xy_position - self.last_xy_position
+        g_prime = self.goal_xy - self.last_xy_position
+        
+        return self.cosine_similarity(v_prime, g_prime)
+        
+    def cosine_similarity(self, v1, v2):
+        """
+        Returns cosine similarity for two vectors v1, v2, both of which are 1xn numpy vectors.
+        See wikipedia for definition of cos-sim. 
+        @v1, @v2: Two numpy.array objects
+        """
+        return v1.dot(v2.T) / (numpy.linalg.norm(v1) * numpy.linalg.norm(v2))
 
     """
     @action: list of motor actions {+c, -c, 0}
@@ -111,14 +162,16 @@ class Arm_Env:
             time.sleep(2)
 
         #eg, (c, 0, -c)
-        self.action_controller.take_action(action)        
-        observation, area = self.state_controller.get_object_state()            
+        self.action_controller.take_action(action)
+        observation, area, object_xy_position = self.state_controller.get_object_state()
+        self.last_xy_position = self.current_xy_position
+        self.current_xy_position = object_xy_position
         #@observation: center of the circle, 
         if area < MIN_AREA:
             observation, area = self.find_object()
-        print "\tReturned Area: %s" % str(area)        
-        print "Distance to Center: %s" % str(self.state_controller.distance_to_center(observation))        
-        reward = self.state_controller.distance_to_center(observation)        
+        print "\tReturned Area: %s" % str(area)
+        print "Distance to Center: %s" % str(self.state_controller.distance_to_center(observation))
+        reward = self.get_reward(observation, object_xy_position)
         '''
         Linear Reward: maxd - d
         Neither w/ Margin -- 0
@@ -174,6 +227,7 @@ class Camera_State_Controller:
         #self.cap = cv2.VideoCapture(camera_dev)
         #self.img_shape = self.get_next_image().shape
 
+    #returns distance between @point and img center
     def distance_to_center(self, point):
         width, height, ch = self.img_shape
         img_cen = (width / 2, height / 2)
@@ -194,7 +248,7 @@ class Camera_State_Controller:
         #img = self.get_next_image()
         area, center, img = self.clf.detect(None)       
         self.img_shape = img.shape
-        grid_center = self.get_object_grid_center(center)
+        grid_center, xy_center = self.get_object_grid_position(center)
         #x1,y1,x2,y2 = self.clf.detect(img)       
         #x_center = (x2 - x1) / 2
         #y_center = (y2 - y1) / 2
@@ -207,11 +261,12 @@ class Camera_State_Controller:
             cv2.imshow("grid", grid)
             cv2.waitKey(5)
 
-        return grid_center, area# / (img.shape[0] * img.shape[1]))
+        return grid_center, area, xy_center # / (img.shape[0] * img.shape[1]))
 
-    #Returns the center of the object in terms of the grid space
+    #Returns the position of the object in terms of the grid space. The first item returned represents
+    #the grid cell radix id, the second is an (x,y) numpy.array representing the absolute position in fixed grid space.
     #Returns -1 if the object is not found
-    def get_object_grid_center(self, center):    
+    def get_object_grid_position(self, center):
         width, height, ch = self.img_shape    
         per_row = height / self.grid_dim[0]
         per_col = width / self.grid_dim[1]
@@ -220,7 +275,7 @@ class Camera_State_Controller:
         print x_cell
         print y_cell                
         
-        return self.grid_dim[0] * int(y_cell) + int(x_cell)
+        return self.grid_dim[0] * int(y_cell) + int(x_cell), numpy.array([x_cell,y_cell])
 
 class Green_Circle_Detector(object):
     """docstring for ClassName"""
