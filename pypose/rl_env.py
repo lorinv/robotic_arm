@@ -78,9 +78,9 @@ class Arm_Test:
 class Arm_Env:
 
     def __init__(self, grid_dim=(9,9), num_motors=3):
-    """
-    @grid_dim: nxn, where n is preferably some odd integer, such that the grid has a single center cell.
-    """
+        """
+        @grid_dim: nxn, where n is preferably some odd integer, such that the grid has a single center cell.
+        """
         self.time_steps = 0
         self.num_states = grid_dim[0] * grid_dim[1]
         self.num_actions = 3**num_motors                
@@ -191,7 +191,7 @@ class Arm_Env:
     def find_object(self):
         step = 0
         self.action_controller.take_action([MOVE_CONST*self.search_direction,0,0])
-        observation, area = self.state_controller.get_object_state()
+        observation, area, xy_position = self.state_controller.get_object_state()
         while area < MIN_AREA:
             self.time_steps += 1      
             step += 1
@@ -205,7 +205,7 @@ class Arm_Env:
                 self.action_controller.take_action([MOVE_CONST*self.search_direction,0,0])
             self.action_controller.take_action([MOVE_CONST*self.search_direction,0,0])
 
-            observation, area = self.state_controller.get_object_state()
+            observation, area, xy_position = self.state_controller.get_object_state()
 
         return observation, area
 
