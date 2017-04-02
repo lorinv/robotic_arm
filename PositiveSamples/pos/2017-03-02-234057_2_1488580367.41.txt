@@ -1,0 +1,3 @@
+PyQt5.QtCore.QRect(347, 164, 145, 163)
+PyQt5.QtCore.QRect(56, 229, 81, 91)
+PyQt5.QtCore.QRect(526, 230, 93, 107)
