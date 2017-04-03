@@ -1,4 +1,0 @@
-Notes.txt
-
-Short Tutorial on Motors
-http://forums.trossenrobotics.com/tutorials/how-to-diy-128/controlling-ax-12-servos-3275/
