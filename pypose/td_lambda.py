@@ -90,7 +90,7 @@ class TDLambdaLearner(object):
             
     def InitState(self, state):
         self.state = state
-        raw_input(state)
+        #raw_input(state)
         self.action = self.qtable[state].argmax()
         return self.action
 
@@ -245,7 +245,7 @@ def main():
             observation, reward, done, info = env.step(action)
             action = learner.move(observation, reward)
             print ">>Action: "+str(action)
-            raw_input("")
+            #raw_input("")
         
         #re-run training offline, eg Dyna-Q
         #learner.Dream()

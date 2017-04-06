@@ -8,6 +8,8 @@ import numpy as np
 import time
 import copy
 
+from camera_state_controller import Camera_State_Controller
+
 DEBUG = True
 TERMINAL_THRESHOLD_SIZE = 70000#39434
 MIN_AREA = .001
@@ -87,6 +89,7 @@ class Arm_Env:
         self.action_controller = Arm_Controller(num_motors)
         self.state_controller = Camera_State_Controller(clf_name="green_circle", grid_dim=grid_dim, camera_dev=1)
         self.search_direction = 1
+        self.motor_pos_stack = []
         
         #position information
         self.last_xy_position = numpy.array([0,0])
@@ -154,7 +157,7 @@ class Arm_Env:
         action = self.actions[action_id]
         self.time_steps += 1
         
-        if self.time_steps % 100 == 0:
+        if self.time_steps % 500 == 0:
             self.action_controller.take_a_break()
             time.sleep(60)
             #reset motor state to before break
@@ -162,13 +165,14 @@ class Arm_Env:
             time.sleep(2)
 
         #eg, (c, 0, -c)
+
         self.action_controller.take_action(action)
         observation, area, object_xy_position = self.state_controller.get_object_state()
         self.last_xy_position = self.current_xy_position
         self.current_xy_position = object_xy_position
         #@observation: center of the circle, 
         if area < MIN_AREA:
-            observation, area = self.find_object()
+            observation, area, object_xy_position = self.revert_to_prev_state()
         print "\tReturned Area: %s" % str(area)
         print "Distance to Center: %s" % str(self.state_controller.distance_to_center(observation))
         reward = self.get_reward(observation, object_xy_position)
@@ -188,153 +192,25 @@ class Arm_Env:
         info = None
         return observation, reward, done, info
 
-    def find_object(self):
-        step = 0
-        self.action_controller.take_action([MOVE_CONST*self.search_direction,0,0])
-        observation, area, xy_position = self.state_controller.get_object_state()
+    def revert_to_prev_state(self):
+        print "Lost the circle... Reverting Back"
+        area = 0
         while area < MIN_AREA:
-            self.time_steps += 1      
-            step += 1
-            if step > 50:
-                self.reset()
-                step = 0
-            search_pose = self.action_controller.to_standard(self.action_controller.motor_poses[0])
-            if search_pose > 800 or search_pose < 300:                
-                self.search_direction *= -1
-                self.action_controller.take_action([MOVE_CONST*self.search_direction,0,0])
-                self.action_controller.take_action([MOVE_CONST*self.search_direction,0,0])
-            self.action_controller.take_action([MOVE_CONST*self.search_direction,0,0])
-
-            observation, area, xy_position = self.state_controller.get_object_state()
-
-        return observation, area
+            self.action_controller.to_last_pose()        
+            observation, area, object_xy_position = self.state_controller.get_object_state()
+        return observation, area, object_xy_position
+        
 
     def render(self):
         print "Look at the robot..."    
         return 1
 
-class Camera_State_Controller:
-
-    def __init__(self, clf_name="green_circle", grid_dim=(16,16), camera_dev=0):
-        if clf_name == "green_circle":
-            self.clf = Green_Circle_Detector()
-        elif clf_name == "wood_blocks":
-            pass
-        else:
-            raise Exception('Error: CV classifier not found.')
-
-        self.grid_dim = grid_dim
-        #self.cap = cv2.VideoCapture(camera_dev)
-        #self.img_shape = self.get_next_image().shape
-
-    #returns distance between @point and img center
-    def distance_to_center(self, point):
-        width, height, ch = self.img_shape
-        img_cen = (width / 2, height / 2)
-        distance = np.linalg.norm(np.array(img_cen)-np.array(point))
-        return distance
-
-    def get_next_image(self):       
-        for i in range(10):
-            ret, img = self.cap.read()
-        if img is None:
-            raise Exception('Error: Failed to read image.')
-
-        return img
-
-    #Returns the center of the object in the image
-    #Returns -1 if the object is not found
-    def get_object_state(self):
-        #img = self.get_next_image()
-        area, center, img = self.clf.detect(None)       
-        self.img_shape = img.shape
-        grid_center, xy_center = self.get_object_grid_position(center)
-        #x1,y1,x2,y2 = self.clf.detect(img)       
-        #x_center = (x2 - x1) / 2
-        #y_center = (y2 - y1) / 2
-        if DEBUG:
-            grid = img.copy()
-            for i in range(0, img.shape[0], img.shape[0]/self.grid_dim[0]):
-                grid[i:i+5,:] = 0
-            for i in range(0, img.shape[1], img.shape[1]/self.grid_dim[0]):
-                grid[:,i:i+5] = 0
-            cv2.imshow("grid", grid)
-            cv2.waitKey(5)
-
-        return grid_center, area, xy_center # / (img.shape[0] * img.shape[1]))
-
-    #Returns the position of the object in terms of the grid space. The first item returned represents
-    #the grid cell radix id, the second is an (x,y) numpy.array representing the absolute position in fixed grid space.
-    #Returns -1 if the object is not found
-    def get_object_grid_position(self, center):
-        width, height, ch = self.img_shape    
-        per_row = height / self.grid_dim[0]
-        per_col = width / self.grid_dim[1]
-        x_cell = center[0] / per_row
-        y_cell = center[1] / per_col
-        print x_cell
-        print y_cell                
-        
-        return self.grid_dim[0] * int(y_cell) + int(x_cell), numpy.array([x_cell,y_cell])
-
-class Green_Circle_Detector(object):
-    """docstring for ClassName"""
-    def __init__(self):
-        pass
-
-    def detect(self, img):      
-        cap = cv2.VideoCapture(1)
-        ret, img = cap.read()
-        
-
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-
-        # define range of green color in HSV
-        lower_green = np.array([60,0,100])
-        upper_green = np.array([80,254,254])
-        mask = cv2.inRange(hsv, lower_green, upper_green)
-
-        cv2.imshow("Mask", mask)
-        cv2.waitKey(5)        
-
-        im2, contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-        
-        if len(contours) < 1:
-            return 0, (-1,-1), img
-
-        max_area = 0
-        max_contour = 0
-        for i,c in enumerate(contours):
-            area = cv2.contourArea(c)
-            if area > max_contour:
-                max_area = area
-                max_contour = i
-
-
-        #print "\tArea: %s" % str(max_area) 
-        if max_area < 20:
-            return 0, (-1,-1), img
-
-        #for i in range(len(contours)):
-        #print contours[i]
-        #   print "hi"
-        m = cv2.moments(contours[max_contour])
-        x = m['m10'] /  m['m00']
-        y = m['m01'] /  m['m00']
-        #print x
-        #print y    
-
-        cv2.circle(img, (int(x), int(y)), 10, (0, 0, 255), 4)
-        cv2.drawContours(img, contours, max_contour, (0,0,255), 3)
-                
-        cap.release()
-        return max_area, (x,y), img
 
 class Arm_Controller:
 
     def __init__(self, num_motors=5):               
         self.motor_poses = []
+        self.motor_pose_record = []
         self.driver = Driver()   
         self.num_motors = num_motors     
         time.sleep(5)
@@ -353,6 +229,16 @@ class Arm_Controller:
             self.motor_poses.append(self.driver.getReg(i+1, P_PRESENT_POSITION_L, 2))    
         print "Poses: %s" % str(self.motor_poses)        
         self.original_pose = copy.copy(self.motor_poses)
+
+    def to_last_pose(self):
+        print "Motor Pose Record: %s" % str(self.motor_pose_record)
+        if len(self.motor_pose_record) > 1:            
+            self.motor_poses = self.motor_pose_record.pop()#self.motor_pose_record[-1]
+            print "Motor Poses"
+            print self.motor_poses
+            self.set_poses(self.motor_poses)
+            time.sleep(3)
+
 
     def reset(self):
         self.set_poses([self.to_hl(520),self.to_hl(520),self.to_hl(520)])
@@ -375,10 +261,10 @@ class Arm_Controller:
         print "Motor Pose 2: %d" % self.to_standard(self.motor_poses[2])
         print "Combo: %d\n" % (self.to_standard(self.motor_poses[1]) + self.to_standard(self.motor_poses[2]))
         #raw_input("")
-        if self.to_standard(self.motor_poses[1]) < 512:
+        if self.to_standard(self.motor_poses[1]) < 450:
             self.motor_poses = self.get_poses()
             return False
-        if self.to_standard(self.motor_poses[2]) < 512:
+        if self.to_standard(self.motor_poses[2]) < 450:
             self.motor_poses = self.get_poses()
             return False
         if self.to_standard(self.motor_poses[2]) > 670:
@@ -418,6 +304,7 @@ class Arm_Controller:
 
         print "Poses: %s" % str(self.motor_poses)
         if self.check_pose():
+            self.motor_pose_record.append(self.motor_poses)
             self.set_poses(self.motor_poses)         
 
     def set_poses(self, poses):
