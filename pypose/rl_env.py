@@ -157,7 +157,7 @@ class Arm_Env:
         action = self.actions[action_id]
         self.time_steps += 1
         
-        if self.time_steps % 500 == 0:
+        if self.time_steps % 100 == 0:
             self.action_controller.take_a_break()
             time.sleep(60)
             #reset motor state to before break
@@ -235,9 +235,11 @@ class Arm_Controller:
         if len(self.motor_pose_record) > 1:            
             self.motor_poses = self.motor_pose_record.pop()#self.motor_pose_record[-1]
             print "Motor Poses"
-            print self.motor_poses
+            print self.motor_poses            
             self.set_poses(self.motor_poses)
-            time.sleep(3)
+            time.sleep(1)
+            #raw_input("SETTING POSE!!")
+            
 
 
     def reset(self):
@@ -267,12 +269,12 @@ class Arm_Controller:
         if self.to_standard(self.motor_poses[2]) < 450:
             self.motor_poses = self.get_poses()
             return False
-        if self.to_standard(self.motor_poses[2]) > 670:
-            self.motor_poses = self.get_poses()
-            return False     
-        if self.to_standard(self.motor_poses[1]) > 670:
-            self.motor_poses = self.get_poses()
-            return False   
+        #if self.to_standard(self.motor_poses[2]) > 670:
+        #    self.motor_poses = self.get_poses()
+        #    return False     
+        #if self.to_standard(self.motor_poses[1]) > 670:
+        #    self.motor_poses = self.get_poses()
+        #    return False   
         '''
         if self.to_standard(self.motor_poses[0]) > 850:
             self.motor_poses = self.get_poses()
@@ -281,9 +283,9 @@ class Arm_Controller:
             self.motor_poses = self.get_poses()
             return False   
         '''
-        if (self.to_standard(self.motor_poses[1]) + self.to_standard(self.motor_poses[2])) > 1400:
-            self.motor_poses = self.get_poses()
-            return False
+        #if (self.to_standard(self.motor_poses[1]) + self.to_standard(self.motor_poses[2])) > 1400:
+        #    self.motor_poses = self.get_poses()
+        #    return False
         return True
 
     def take_action(self, action):        
@@ -304,7 +306,7 @@ class Arm_Controller:
 
         print "Poses: %s" % str(self.motor_poses)
         if self.check_pose():
-            self.motor_pose_record.append(self.motor_poses)
+            self.motor_pose_record.append(copy.copy(self.motor_poses))
             self.set_poses(self.motor_poses)         
 
     def set_poses(self, poses):
