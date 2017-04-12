@@ -26,7 +26,8 @@ class TDLambdaLearner(object):
             nTraces=200,  #the number of eligibility traces to store; cart-pole episodes are bounded by 200 steps
             traceUpdate="standard", # standard or 'replacing'
             tdAlgorithm="watkins",   # "watkins" or "sarsa"
-            useExperienceCache=True):
+            useExperienceCache=True
+            qFilePath=None): #Path to a q-file, containing saved q-values from previous training. If None, agent is initialized with random q-values.
         self.num_states = num_states
         self.num_actions = num_actions
         self.alpha = alpha
@@ -35,7 +36,20 @@ class TDLambdaLearner(object):
         self.randomActionDecayRate = randomActionDecayRate
         self.state = 0
         self.action = 0
-        self.qtable = np.random.uniform(low=-1, high=1, size=(num_states, num_actions))
+        self.stepCtr = 0 #not an algorithmic parameter, just a way of tracking/signalling good times to write files and other expensive things, for instances
+        #initialize the q-table
+        if qFilePath: #qFilePath not None, so read previous q values from file
+            self.qFilePath = qFilePath
+            self.qtable = self._readQFile(qFilePath)
+            #check size of q-table just read-in; we could easily change the state/action space size and forget to distrust old file values
+            if self.qtable.shape[0] != num_states or self.qtable.shape[1] != num_actions:
+                print("ERROR read in qtable is size "+str(self.qtable)+" but target is size "+str((num_state,num_actions)))
+                print("Q-Table will be reinitialized with random values!")
+                self.qtable = np.random.uniform(low=-1, high=1, size=(num_states, num_actions))
+        else: #qFilePath is None, so init random, small q values
+            self.qtable = np.random.uniform(low=-1, high=1, size=(num_states, num_actions))
+            self.qFilePath="qValues.csv"
+
         self._lambda = tdLambda
         if tdAlgorithm.lower() == "sarsa":
             self.isWatkins = False
@@ -59,6 +73,30 @@ class TDLambdaLearner(object):
         #is useExperienceCache, then configure the agent to cache k last experiences, such as for Dyna-Q paradigms
         self.InitCache(useExperienceCache)
 
+    def _readQFile(self, qFilePath):
+        """
+        Simple function for desrializing a q-table from @qFilePath, which is required to contain
+        
+        Returns qtable as ndarray, as it was previously written to @qFilePath.
+        """
+        qFile = open(qFilePath, "r")
+        qtable = np.ndarray.fromfile(qFile, sep=",", format="txt")
+        if not qFile.closed:
+            qFile.close()
+            
+        return qtable
+        
+    def _writeQFile(self, qFilePath):
+        """
+        Writes current q-values to @qFilePath, overwriting any previous stored values.
+        
+        NOTE this is directly paired with _readQFile.
+        """
+        qFile = open(qFilePath, "w+")
+        self.qtable.tofile(qFile, sep=",", format="txt")
+        if not qFile.closed:
+            qFile.close()
+        
     """
     A pass-through null-function so the code is agnostic to the cache.
     """
@@ -136,6 +174,11 @@ class TDLambdaLearner(object):
     @reward: the reward just acquired
     """
     def move(self, statePrime, reward):
+        
+        #this param is not an algorithmic parameter, just a way of tracking and controlling good times to write files, other periodic bookkeeping tasks, etc
+        self.stepCtr += 1
+        if self.stepCtr % 200 == 199: #write the qvalues to file every 200 steps, for America. Writing files is expensive, so only do so periodically.
+            self._writeQFile(self.qFilePath)
         
         actRandomly = (1 - self.randomActionRate) <= self._getRand()
         if actRandomly:
@@ -232,7 +275,7 @@ def main():
     """
     learner = TDLambdaLearner(env.num_states, env.num_actions, alpha, gamma,
                                                 randomActionRate, randomActionDecayRate, tdLambda,
-                                                200, traceMethod, algorithm, True)
+                                                200, traceMethod, algorithm, True, "qValues.csv")
     done = False
     convergence = False
     while not convergence:
