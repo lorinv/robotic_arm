@@ -124,23 +124,29 @@ class Selective_Search:
 
 if __name__ == '__main__':
     import sys
+    import os
     posRawSamples = []
     negRawSamples = []
     posFeatures = None
-    negFeatures = None
-    for path in sys.argv[1:]:
-        image = cv2.imread(path)
-        smaller_dim = min(image.shape[0],image.shape[1])
-        image = image[0:smaller_dim, 0:smaller_dim]        
-        image = cv2.resize(image, (35,35), interpolation = cv2.INTER_CUBIC)
-        if "pos" in path:            
-            print path
-            posRawSamples.append(image)
-        else:
-            negRawSamples.append(image)
+    negFeatures = None    
+    for dir in sys.argv[1:]:
+        for path in os.listdir(dir):                        
+            image = cv2.imread(dir + path)
+            if image is None:
+                raise "Error! No Image Found"
+            smaller_dim = min(image.shape[0],image.shape[1])
+            image = image[0:smaller_dim, 0:smaller_dim]        
+            image = cv2.resize(image, (35,35), interpolation = cv2.INTER_CUBIC)
+            if "pos" in path.lower():            
+                print path
+                posRawSamples.append(image)
+            else:
+                negRawSamples.append(image)
 
     classifier = HOG_Color_Hist_Classifier()
-    X_train, X_test, y_train, y_test = classifier.compute_data_matrix(posRawSamples, negRawSamples[:len(posRawSamples)])
+    while len(posRawSamples) < len(negRawSamples):
+        posRawSamples = posRawSamples * 2
+    X_train, X_test, y_train, y_test = classifier.compute_data_matrix(posRawSamples[:len(negRawSamples)], negRawSamples)
     classifier.compute_linear_svm_classifier(X_train, y_train)
     correct_labels = 0
     for i, feature in enumerate(X_test):        

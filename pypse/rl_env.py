@@ -156,10 +156,15 @@ class Arm_Env:
     def step(self, action_id):   
         action = self.actions[action_id]
         self.time_steps += 1
+        print 
+        print
+        print "TIME STEPS: %d" % self.time_steps
+        print
+        print
         
         if self.time_steps % 100 == 0:
             self.action_controller.take_a_break()
-            time.sleep(60)
+            time.sleep(120)
             #reset motor state to before break
             self.action_controller.set_poses(self.action_controller.motor_poses)
             time.sleep(2)
@@ -306,6 +311,7 @@ class Arm_Controller:
 
         print "Poses: %s" % str(self.motor_poses)
         if self.check_pose():
+            self.motor_poses[1] = self.to_hl(512)
             self.motor_pose_record.append(copy.copy(self.motor_poses))
             self.set_poses(self.motor_poses)         
 
@@ -316,7 +322,7 @@ class Arm_Controller:
         for i in range(len(poses)):
             print "Motor: %d" % (i+1)      
             self.driver.setReg(i+1, 32, self.to_hl(MOTOR_SPEED))  
-            #time.sleep(.5)         
+            #time.sleep(.5)                     
             self.driver.setReg(i+1, P_GOAL_POSITION_L, poses[i])                 
             #time.sleep(.5)
 
