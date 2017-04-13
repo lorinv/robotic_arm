@@ -28,7 +28,8 @@ class TDLambdaLearner(object):
             traceUpdate="standard", # standard or 'replacing'
             tdAlgorithm="watkins",   # "watkins" or "sarsa"
             useExperienceCache=True,
-            qFilePath=None): #Path to a q-file, containing saved q-values from previous training. If None, agent is initialized with random q-values.
+            qFilePath=None, #Path to a q-file, containing saved q-values from previous training. If None, agent is initialized with random q-values.
+            resetQVals=False):
         self.num_states = num_states
         self.num_actions = num_actions
         self.alpha = alpha
@@ -40,7 +41,7 @@ class TDLambdaLearner(object):
         self.stepCtr = 0 #not an algorithmic parameter, just a way of tracking/signalling good times to write files and other expensive things, for instances
 
         #init the q values
-        self._initQValues(qFilePath, num_states, num_actions)
+        self._initQValues(qFilePath, resetQVals, num_states, num_actions)
         
         self._lambda = tdLambda
         if tdAlgorithm.lower() == "sarsa":
@@ -65,12 +66,14 @@ class TDLambdaLearner(object):
         #is useExperienceCache, then configure the agent to cache k last experiences, such as for Dyna-Q paradigms
         self.InitCache(useExperienceCache)
 
-    def _initQValues(self, qFilePath, numStates, numActions):
+    def _initQValues(self, qFilePath, resetQVals, numStates, numActions):
         """
         If qFilePath is not None, q-values are read from this path. If reading fails, or if @qFilePath==None, then
         random q values are initialized.
+        
+        @resetQVals: if true, q values will be initialized to random vals
         """
-        if qFilePath: #qFilePath not None, so attempt to read previous q values from file
+        if qFilePath and not resetQVals: #qFilePath not None, so attempt to read previous q values from file
             self.qFilePath = qFilePath
             #check the file exists and is not empty
             if not os.path.exists(qFilePath) or os.path.getsize(qFilePath) <= 0:
@@ -207,7 +210,7 @@ class TDLambdaLearner(object):
         
         #this param is not an algorithmic parameter, just a way of tracking and controlling good times to write files, other periodic bookkeeping tasks, etc
         self.stepCtr += 1
-        if self.stepCtr % 200 == 199: #write the qvalues to file every 200 steps, for America. Writing files is expensive, so only do so periodically.
+        if self.stepCtr % 10 == 9: #write the qvalues to file every 200 steps, for America. Writing files is expensive, so only do so periodically.
             self._writeQFile(self.qFilePath)
         
         actRandomly = (1 - self.randomActionRate) <= self._getRand()
@@ -280,6 +283,7 @@ def main():
     tdLambda = 0.5
     algorithm = "sarsa" # "sarsa" or "watkins" for q-learning
     traceMethod = "normal" # "normal" for normal (per Barto), or "replacing" for replacing traces (see Barto)
+    resetQVals = False
     
     #get any cmd line params
     for arg in sys.argv:
@@ -299,13 +303,15 @@ def main():
             traceMethod = arg.split("=")[1]
         elif "maxEpisodes=" in arg:
             maxEpisodes = int(arg.split("=")[1])
+        elif "--resetq" in arg:
+            resetQVals = True
 
     """
     
     """
     learner = TDLambdaLearner(env.num_states, env.num_actions, alpha, gamma,
                                                 randomActionRate, randomActionDecayRate, tdLambda,
-                                                200, traceMethod, algorithm, True, "qValues.csv")
+                                                200, traceMethod, algorithm, True, "qValues.csv", resetQVals)
     done = False
     convergence = False
     while not convergence:
