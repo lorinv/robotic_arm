@@ -279,7 +279,7 @@ def main():
     alpha =0.2
     gamma = 0.9
     randomActionRate = 0.2
-    randomActionDecayRate = 0.9999
+    randomActionDecayRate = 0.9
     tdLambda = 0.5
     algorithm = "sarsa" # "sarsa" or "watkins" for q-learning
     traceMethod = "normal" # "normal" for normal (per Barto), or "replacing" for replacing traces (see Barto)
