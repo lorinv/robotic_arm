@@ -82,7 +82,7 @@ class TDLambdaLearner(object):
         if useExperienceCache:
             self._cacheExperience = self._appendToCache
             #cache file just stores the cached experiences as tuples; writing them as str(tuple) means they can be read back in just reading each line and calling eval(line)
-            self._cacheFile = open("experienceCache.txt","a+")
+            self._cacheFile = open("data/experienceCache.txt","a+")
             #cache is a list of previous transitions as tuples: (state, statePrime, action, reward)
             self._experienceCache = []
         else:
