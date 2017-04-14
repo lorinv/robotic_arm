@@ -1,22 +1,15 @@
-
-
-#from __future__ import print_function
-import gym
 import numpy as np
 import random
 import sys
 import os
-
-#For Robotic Arm
-#from rl_env import *
-from env import Arm_Env
 
 try:
     xrange
 except NameError:
     xrange = range    #python3 has no xrange function; python3 range is python2's xrange
 
-class TDLambdaLearner(object):
+    
+class TDLambdaAgent(object):
     def __init__(self,
             num_states=100,
             num_actions=4,
@@ -138,6 +131,7 @@ class TDLambdaLearner(object):
                 rowStr += str(self.qtable[row,col])[0:4] + " "
             rowStr += "\n"
             print(rowStr)
+
         
     """
     A pass-through null-function so the code is agnostic to the cache.
@@ -269,74 +263,8 @@ class TDLambdaLearner(object):
 
         return self.action
 
-def buildState(features):
-    return int("".join(map(lambda feature: str(int(feature)), features)))
-
-def getBin(value, bins):
-    return np.digitize(x=[value], bins=bins)[0]
-
-def main():
-    env = Arm_Env()
-    perfLog = open("data/performance.txt","a+")
-    perfLog.write("\n") #start convergence values on a fresh line
-    
-    #decent default values, just based on observation
-    alpha =0.2
-    gamma = 0.9
-    randomActionRate = 0.2
-    randomActionDecayRate = 0.9
-    tdLambda = 0.5
-    algorithm = "sarsa" # "sarsa" or "watkins" for q-learning
-    traceMethod = "normal" # "normal" for normal (per Barto), or "replacing" for replacing traces (see Barto)
-    resetQVals = False
-    
-    #get any cmd line params
-    for arg in sys.argv:
-        if "alpha=" in arg:
-            alpha = float(arg.split("=")[1])
-        elif "gamma=" in arg:
-            gamma = float(arg.split("=")[1])
-        elif "randomRate=" in arg:
-            randomActionRate = float(arg.split("=")[1])
-        elif "randomDecay=" in arg:
-            randomActionDecayRate = float(arg.split("=")[1])
-        elif "lambda=" in arg:
-            tdLambda = float(arg.split("=")[1])
-        elif "algorithm=" in arg:
-            algorithm = arg.split("=")[1]
-        elif "traceMethod=" in arg:
-            traceMethod = arg.split("=")[1]
-        elif "maxEpisodes=" in arg:
-            maxEpisodes = int(arg.split("=")[1])
-        elif "--resetq" in arg:
-            resetQVals = True
-
-    """
-    
-    """
-    learner = TDLambdaLearner(env.num_states, env.num_actions, alpha, gamma,
-                                                randomActionRate, randomActionDecayRate, tdLambda,
-                                                200, traceMethod, algorithm, True, "qValues.csv", resetQVals)
-    done = False
-    convergence = False
-    while not convergence:
-        done = False
-        #reset the learner's eligibility traces for this episode
-        learner.ResetEligibilities()
-        observation, reward, done, info = env.reset()
-        action = learner.InitState(observation)
-        while not done:
-            observation, reward, done, info = env.step(action)
-            action = learner.move(observation, reward)
-            print ">>Action: "+str(action)
-            #raw_input("")
-        
-        #re-run training offline, eg Dyna-Q
-        #learner.Dream()
-        
-    perfLog.close()
-    #env.monitor.close()
-
-if __name__ == "__main__":
-    random.seed(0)
-    main()
+    #These two are obsolete, but are useful for more complex state spaces, such as tilings of contniuous spaces
+    def buildState(self, features):
+        return int("".join(map(lambda feature: str(int(feature)), features)))
+    def getBin(self, value, bins):
+        return np.digitize(x=[value], bins=bins)[0]
