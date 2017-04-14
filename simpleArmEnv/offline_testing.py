@@ -14,8 +14,8 @@ which is a bunch of tuples representing (state, action, reward, statePrime).
 #reads all experiences back in as 
 experiences = [eval(line) for line in open("./data/experienceCache.txt","r").readlines() if len(line.strip()) > 0]
 
-num_states = 
-num_actions = 
+num_states = 4
+num_actions = 3
 alpha = 0.1
 gamma = 0.9
 randomActionDecayRate = 0.9
@@ -23,7 +23,6 @@ randomActionRate = 0.2
 tdLambda = 0.99
 traceMethod = "normal"
 algorithm = "sarsa"
-
 
 learner = TDLambdaLearner(num_states, env.num_actions, alpha, gamma,
                                         randomActionRate, randomActionDecayRate, tdLambda,
