@@ -20,6 +20,7 @@ def main():
     algorithm = "sarsa" # "sarsa" or "watkins" for q-learning
     traceMethod = "normal" # "normal" for normal (per Barto), or "replacing" for replacing traces (see Barto)
     resetQVals = False
+    resetCache = True
     
     #get any cmd line params
     for arg in sys.argv:
@@ -41,13 +42,15 @@ def main():
             maxEpisodes = int(arg.split("=")[1])
         elif "--resetq" in arg:
             resetQVals = True
+        elif "--resetCache" in arg:
+            resetCache = True
 
     """
     
     """
     learner = TDLambdaAgent(env.num_states, env.num_actions, alpha, gamma,
                                                 randomActionRate, randomActionDecayRate, tdLambda,
-                                                200, traceMethod, algorithm, True, "qValues.csv", resetQVals)
+                                                200, traceMethod, algorithm, True, "qValues.txt", resetQVals, resetCache)
 
     done = False
     convergence = False

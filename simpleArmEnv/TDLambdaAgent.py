@@ -23,7 +23,8 @@ class TDLambdaAgent(object):
             tdAlgorithm="watkins",   # "watkins" or "sarsa"
             useExperienceCache=True,
             qFilePath=None, #Path to a q-file, containing saved q-values from previous training. If None, agent is initialized with random q-values.
-            resetQVals=False):
+            resetQVals=False,
+            resetCache=False): #if True, blow away the old experienceCache.txt file; DO THIS WHENEVER STATE-ACTION SPACE IS CHANGED
         self.num_states = num_states
         self.num_actions = num_actions
         self.alpha = alpha
@@ -33,9 +34,10 @@ class TDLambdaAgent(object):
         self.state = 0
         self.action = 0
         self.stepCtr = 0 #not an algorithmic parameter, just a way of tracking/signalling good times to write files and other expensive things, for instances
-
+        self.dtype = "float32"
+        
         #init the q values
-        self._initQValues(qFilePath, resetQVals, num_states, num_actions)
+        self._initQValues(self.qFilePath, resetQVals, num_states, num_actions)
         
         self._lambda = tdLambda
         if tdAlgorithm.lower() == "sarsa":
@@ -58,7 +60,7 @@ class TDLambdaAgent(object):
         self.randNumIndex = 0
 
         #is useExperienceCache, then configure the agent to cache k last experiences, such as for Dyna-Q paradigms
-        self.InitCache(useExperienceCache)
+        self.InitCache(useExperienceCache, resetCache)
 
     def _initQValues(self, qFilePath, resetQVals, numStates, numActions):
         """
@@ -67,26 +69,28 @@ class TDLambdaAgent(object):
         
         @resetQVals: if true, q values will be initialized to random vals
         """
+        self.qFilePath = qFilePath
         if qFilePath and not resetQVals: #qFilePath not None, so attempt to read previous q values from file
-            self.qFilePath = qFilePath
             #check the file exists and is not empty
             if not os.path.exists(qFilePath) or os.path.getsize(qFilePath) <= 0:
                 print "WARNING q-file "+qFilePath+" empty or doesn't exist. Initializing random q-values."
-                self.qtable = np.random.uniform(low=-1, high=1, size=(numStates, numActions))
+                self.qtable = self._randQArray(numStates, numActions)
             else: #file exists, so attempt to read previous values
                 if not self._readQFile(qFilePath):
                     print "ERROR there was a problem reading qvalues from "+qFilePath+". Using random default init instead..."
-                    self.qtable = np.random.uniform(low=-1, high=1, size=(numStates, numActions))
+                    self.qtable = self._randQArray(numStates, numActions)
                 #read succeeded, but verify qtable size is consistent over disk read/writes; otherwise we could screw up every time we alter our state/action size
                 elif self.qtable.shape[0] != numStates or self.qtable.shape[1] != numActions:
-                        print "ERROR read in qtable is size "+str(self.qtable)+" but target is size "+str((numStates,numActions))
+                        print "ERROR read qtable from "+self.qFilePath+" is size "+str(self.qtable)+" but target is size "+str((numStates,numActions))
                         print "Q-Table will be reinitialized with random values!"
-                        self.qtable = np.random.uniform(low=-1, high=1, size=(numStates, numActions))
+                        self.qtable = self._randQArray(numStates,numActions)
         else: #qFilePath is None, so init random, small q values
             print "Initializing agent with random q values..."
-            self.qtable = np.random.uniform(low=-1, high=1, size=(numStates, numActions))
-            self.qFilePath = "qValues.csv"
+            self.qtable = self._randQArray(numStates, numActions)
 
+    def _randQArray(self, numStates, numActions):
+        return np.random.uniform(low=-1, high=1, size=(numStates, numActions)).astype(self.dtype)
+            
     def _readQFile(self, qFilePath):
         """
         Simple function for desrializing a q-table from @qFilePath, which is required to contain
@@ -95,10 +99,7 @@ class TDLambdaAgent(object):
         success = False
 
         try:
-            qFile = open(qFilePath,"r")
-            qtable = np.ndarray.fromfile(qFile, sep=",", format="txt")
-            if not qFile.closed:
-                qFile.close()
+            self.qtable = np.loadtxt(self.qFilePath, dtype=self.dtype)
             success = True
         except:
             print "ERROR could not read q values from "+qFilePath
@@ -112,12 +113,8 @@ class TDLambdaAgent(object):
         NOTE this is directly paired with _readQFile.
         """
         success = False
-        
         try:
-            qFile = open(qFilePath, "w+") #blow away previous file contents
-            self.qtable.tofile(qFile, sep=",", format="txt")
-            if not qFile.closed:
-                qFile.close()
+            np.savetxt(self.qFilePath, self.qtable, fmt='%f')
             success = True
         except:
             print "ERROR problem encountered writing q values to file."
@@ -152,11 +149,22 @@ class TDLambdaAgent(object):
         self.ResetEligibilities()
         self.InitCache()
         
-    def InitCache(self, useExperienceCache):
+    """
+    @useExperienceCache: If true, we will store all experiences in an experience cache, and periodically write them to experienceCache.txt
+    @resetCache: If true, the experienceCache.txt file will be opened for write, blowing away previous file content and restarting the cache. This
+                         param only applies if useExperienceCache==True.
+    """
+    def InitCache(self, useExperienceCache, resetCache):
         if useExperienceCache:
+            #point the _appendCache() call at the desired function
             self._cacheExperience = self._appendToCache
+            #select whether or not to blow away old experienceCache.txt file
+            if resetCache:
+                fileMode = "w+"
+            else:
+                fileMode = "a+"
             #cache file just stores the cached experiences as tuples; writing them as str(tuple) means they can be read back in just reading each line and calling eval(line)
-            self._cacheFile = open("data/experienceCache.txt","a+")
+            self._cacheFile = open("data/experienceCache.txt",fileMode)
             #output a line of dashes signifying a new set of experiences
             self._cacheFile.write("----------------------New Run----------------------\n")
             #cache is a list of previous transitions as tuples: (state, statePrime, action, reward)
