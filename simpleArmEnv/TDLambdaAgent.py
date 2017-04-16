@@ -126,9 +126,9 @@ class TDLambdaAgent(object):
             rowStr = ""
             for col in range(self.qtable.shape[1]):
                 rowStr += str(self.qtable[row,col])[0:4] + " "
-            rowStr += "\n"
+            #rowStr += "\n"
             print(rowStr)
-
+	print("\n")
         
     """
     A pass-through null-function so the code is agnostic to the cache.
