@@ -44,16 +44,16 @@ class ArmActions:
 
     def take_action(self, action_id, state):
         if action_id == GO_LEFT:                
-            if state == 0 or state == 3 or state == 6:
+            if state == 0 or state == 5 or state == 15 or state == 20:
                 return
         if action_id == GO_RIGHT:                
-            if state == 2 or state == 5 or state == 8:
+            if state == 4 or state == 9 or state == 14 or state == 19:
                 return
         if action_id == GO_UP: 
-            if state == 0 or state == 1 or state == 2:
+            if state == 0 or state == 1 or state == 2 or state == 3 or state == 4:
                 return
         if action_id == GO_DOWN: 
-            if state == 6 or state == 7 or state == 8:
+            if state == 20 or state == 21 or state == 22 or state == 23 or state == 24:
                 return    
 
         self.set_motors(action_id)
@@ -76,6 +76,7 @@ class ArmActions:
         print "Pose: %d" % pose
         if motor == 1:
             if pose > MAX_LIMIT or pose < MIN_LIMIT:
+                print "HITTING END OF RANGE OF MOTION!"
                 return False
             else:
                 return True

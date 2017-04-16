@@ -9,8 +9,8 @@ class ArmState:
 
     def __init__(self):
         self.detector = BlockDetector()
-        self.num_states = 10
-        self.screen_sections = 3
+        self.num_states = 26
+        self.screen_sections = 5
 
     def get_num_states(self):
         return self.num_states

@@ -16,7 +16,7 @@ class Arm_Env:
         return self.step(0)
 
     def get_reward(self):
-        if self.current_state == 4:         
+        if self.current_state == 12:         
             return 1
         else:
             return -1
