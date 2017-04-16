@@ -21,7 +21,7 @@ class BlockDetector:
         ss = Selective_Search()
         regions = ss.generate_regions(image)
         roi_set = ss.get_roi_set(image, regions)
-
+        
         classifier = HOG_Color_Hist_Classifier()
         classifier.load_classifier("computer_vision/hog_color_hist_classifier.clf")
 
@@ -36,7 +36,7 @@ class BlockDetector:
                     print "Center Coordinates: %s" % str(center_cood)
                     cv2.rectangle(image, (x,y), (x+w,y+h), (0, 255, 0), 2)
                     return center_cood, roi_original_area, image
-
+        
         return [-1,-1], -1, image
         '''
         print "Label: %s" % str(label)          
