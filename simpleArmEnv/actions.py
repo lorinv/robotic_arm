@@ -5,8 +5,8 @@ from driver import Driver
 from ax12 import *
 from time import sleep
 MOTOR_SPEED = 35
-MAX_LIMIT = 650
-MIN_LIMIT = 450
+MAX_LIMIT = 750
+MIN_LIMIT = 350
 NO_MOVE = 0
 GO_LEFT = 1
 GO_RIGHT = 2
