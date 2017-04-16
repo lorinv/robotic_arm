@@ -126,9 +126,9 @@ class TDLambdaAgent(object):
             rowStr = ""
             for col in range(self.qtable.shape[1]):
                 rowStr += str(self.qtable[row,col])[0:4] + " "
-            rowStr += "\n"
+            #rowStr += "\n"
             print(rowStr)
-
+	print("\n")
         
     """
     A pass-through null-function so the code is agnostic to the cache.
@@ -166,7 +166,8 @@ class TDLambdaAgent(object):
             #cache file just stores the cached experiences as tuples; writing them as str(tuple) means they can be read back in just reading each line and calling eval(line)
             self._cacheFile = open("data/experienceCache.txt",fileMode)
             #output a line of dashes signifying a new set of experiences
-            self._cacheFile.write("----------------------New Run----------------------\n")
+            self._cacheFile.write("-----------------------------------New Run-----------------------------------\n")
+            self._cacheFile.write("--------NumStates="+str(self.num_states)+" NumActions="+str(self.num_actions)+"----------\n")
             #cache is a list of previous transitions as tuples: (state, statePrime, action, reward)
             self._experienceCache = []
         else:
