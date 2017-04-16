@@ -37,7 +37,7 @@ class TDLambdaAgent(object):
         self.dtype = "float32"
         
         #init the q values
-        self._initQValues(self.qFilePath, resetQVals, num_states, num_actions)
+        self._initQValues(qFilePath, resetQVals, num_states, num_actions)
         
         self._lambda = tdLambda
         if tdAlgorithm.lower() == "sarsa":
