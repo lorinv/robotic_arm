@@ -18,8 +18,8 @@ num_states = 26
 num_actions = 5
 alpha = 0.1
 gamma = 0.9
-randomActionDecayRate = 0.9
-randomActionRate = 0.2
+randomActionDecayRate = 0.99
+randomActionRate = 0.1
 tdLambda = 0.99
 traceMethod = "normal"
 algorithm = "sarsa"
@@ -39,5 +39,6 @@ for i in range(50):
         learner.state = state
         learner.action = action
         learner.move(statePrime, reward)
+	print("Iteration: "+str(i))
         learner.PrintQValues()
     
