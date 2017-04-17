@@ -12,16 +12,16 @@ GO_LEFT = 1
 GO_RIGHT = 2
 GO_UP = 3
 GO_DOWN = 4
-BASE_MOTOR_STEP =70
-WRIST_MOTOR_STEP = 30
+BASE_MOTOR_STEP = 30
+WRIST_MOTOR_STEP = 10
 
 class ArmActions:
 
     def __init__(self):        
         self.driver = Driver()
-        sleep(5)  
+        sleep(10)  
         self.setup_motors()
-        self.actions = [[0,0],[-BASE_MOTOR_STEP,0],[BASE_MOTOR_STEP,0],[0,WRIST_MOTOR_STEP],[0,-WRIST_MOTOR_STEP]] 
+        self.actions = [[-BASE_MOTOR_STEP,0],[BASE_MOTOR_STEP,0],[0,WRIST_MOTOR_STEP],[0,-WRIST_MOTOR_STEP]] 
         self.num_actions = len(self.actions)   
         self.inital_pose = []
         for i in range(4):  
@@ -43,16 +43,16 @@ class ArmActions:
         return self.num_actions
 
     def take_action(self, action_id, state):
-        if action_id == GO_LEFT:                
+        if action_id == GO_RIGHT:                
             if state == 0 or state == 5 or state == 15 or state == 20:
                 return
-        if action_id == GO_RIGHT:                
+        if action_id == GO_LEFT:                
             if state == 4 or state == 9 or state == 14 or state == 19:
                 return
-        if action_id == GO_UP: 
+        if action_id == GO_DOWN: 
             if state == 0 or state == 1 or state == 2 or state == 3 or state == 4:
                 return
-        if action_id == GO_DOWN: 
+        if action_id == GO_UP: 
             if state == 20 or state == 21 or state == 22 or state == 23 or state == 24:
                 return    
 
@@ -91,9 +91,9 @@ class ArmActions:
 
 
     def reset(self):
-        for i in range(3):
-            self.driver.setReg(1, 32, self.inital_pose[i])        
-        sleep(2)        
+        for i in range(4):
+            self.driver.setReg(i+1, 30, self.inital_pose[i])        
+        sleep(3)        
 
     def to_hl(self, value):        
         l = value & 255

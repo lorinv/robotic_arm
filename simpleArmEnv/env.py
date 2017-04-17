@@ -17,7 +17,9 @@ class Arm_Env:
 
     def get_reward(self):
         if self.current_state == 12:         
-            return 1
+            return 10
+        elif self.current_state == 25:
+            return -10
         else:
             return -1
 
@@ -35,7 +37,7 @@ class Arm_Env:
         self.current_state = self.state_manager.get_state()        
         reward = self.get_reward()        
         self.total_reward += reward
-        done = self.total_reward >= 10
+        done = self.current_state == 12
         if done:
             self.total_reward = 0
             self.reset()

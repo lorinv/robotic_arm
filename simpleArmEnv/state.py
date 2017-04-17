@@ -29,7 +29,7 @@ class ArmState:
         center, _, image = self.detector.detect()
         image = self.draw_grid_lines(image)
         if center[0] == -1:
-            return 9
+            return 25
         width, height, ch = image.shape
         per_row = height / self.screen_sections
         per_col = width / self.screen_sections
