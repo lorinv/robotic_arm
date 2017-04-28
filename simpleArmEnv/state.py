@@ -1,6 +1,8 @@
 import sys
 sys.path.insert(0, 'computer_vision')
+sys.path.insert(0, 'for_arm')
 import numpy as np
+from predict_labels import TensorBoxPrediction
 
 from selective_search_hog import BlockDetector
 import cv2
@@ -8,9 +10,11 @@ import cv2
 class ArmState:
 
     def __init__(self):
-        self.detector = BlockDetector()
+        self.detector = TensorBoxPrediction()#BlockDetector()
         self.num_states = 26
         self.screen_sections = 5
+        self.cap = cv2.VideoCapture(1)     
+        
 
     def get_num_states(self):
         return self.num_states
@@ -25,10 +29,18 @@ class ArmState:
 
         return image
 
-    def get_state(self):        
-        center, _, image = self.detector.detect()
+    def get_state(self):   
+        for i in range(20):
+            ret, image = self.cap.read()
+        if image is None:
+            print "Failing to get image."
+            self.get_state()        
+        #center, _, image = self.detector.detect(image)
+        center, image = self.detector.detect(image)
+        print "Center: %s" % str(center)
+        print "Image Size: %s" % str(image.shape)
         image = self.draw_grid_lines(image)
-        if center[0] == -1:
+        if center[0] > image.shape[0] or center[1] > image.shape[1] or center[0] == -1:
             return 25
         width, height, ch = image.shape
         per_row = height / self.screen_sections
