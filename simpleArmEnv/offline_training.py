@@ -15,7 +15,7 @@ which is a bunch of tuples representing (state, action, reward, statePrime).
 experiences = [eval(line) for line in open("./data/experienceCache.txt","r").readlines() if len(line.strip()) > 0 and "---" not in line]
 
 num_states = 26
-num_actions = 5
+num_actions = 4
 alpha = 0.1
 gamma = 0.9
 randomActionDecayRate = 0.99
