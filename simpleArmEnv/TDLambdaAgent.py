@@ -50,6 +50,8 @@ class TDLambdaAgent(object):
         self.ResetEligibilities()
         self.nTraces = nTraces
         
+        self.deltas = [] #for tracking algorithmic convergence TODO: tidy this up, wrote it last minute for homework
+
         if traceUpdate == "replacing":
             self._traceUpdate = self._replacingTraceUpdate
         else:
@@ -248,6 +250,8 @@ class TDLambdaAgent(object):
             #sarsa: update made wrt action taken
             delta = reward + self.gamma * self.qtable[statePrime, actionPrime] - self.qtable[self.state, self.action]
             
+        self.deltas.append(delta)
+
         #update the traces (incrementing or replacing trace update)
         self._traceUpdate(self.state, self.action)
         #for all (state,action) pairs with non-zero eligibility, update em; this is done fastest by marching backward from current ringIndex
@@ -260,7 +264,7 @@ class TDLambdaAgent(object):
             #self.qtable[state,action] = (1.0 - self.alpha) * self.qtable[state,action] + self.alpha * delta * self.eligibilityTable[state,action]
             self.qtable[state,action] += self.alpha * delta * self.eligibilityTable[state,action]
             #decay eligibilities
-            self.eligibilityTable[state,action] = self._lambda * self.gamma * self.eligibilityTable[state,action]               
+            self.eligibilityTable[state,action] = self._lambda * self.gamma * self.eligibilityTable[state,action]        
             i -= 1
 
         #for watkins q(lambda) eligibilities are completely reset when non-max action is taken
